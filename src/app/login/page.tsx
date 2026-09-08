@@ -3,78 +3,276 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  mobile: string;
+  password: string;
+};
 
 export default function LoginPage() {
   const router = useRouter();
 
   const [isSignup, setIsSignup] = useState(false);
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: FormEvent) {
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     setError("");
+    setLoading(true);
 
-    const users = JSON.parse(localStorage.getItem("plotapna_users") || "[]");
 
-    if (isSignup) {
-      if (!name || !email || !mobile || !password) {
-        setError("Please fill all fields.");
+    try {
+
+      const normalizedEmail = email.trim().toLowerCase();
+
+
+      // =========================
+      // SIGN UP
+      // =========================
+
+      if (isSignup) {
+
+
+        if (
+          !name.trim() ||
+          !normalizedEmail ||
+          !mobile.trim() ||
+          !password
+        ) {
+
+          setError("Please fill all fields.");
+          setLoading(false);
+          return;
+
+        }
+
+
+        // Check existing user
+
+        const { data: existingUser } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", normalizedEmail)
+          .maybeSingle();
+
+
+
+        if (existingUser) {
+
+          setError(
+            "An account with this email already exists."
+          );
+
+          setLoading(false);
+          return;
+
+        }
+
+
+
+        // Create user
+
+        const { data:newUser, error:createError } =
+          await supabase
+          .from("users")
+          .insert({
+
+            name:name.trim(),
+
+            email:normalizedEmail,
+
+            mobile:mobile.trim(),
+
+            password:password
+
+          })
+          .select()
+          .single();
+
+
+
+        if(createError){
+
+          console.error(createError);
+
+          setError(createError.message);
+
+          setLoading(false);
+
+          return;
+
+        }
+
+
+
+        // Save current session
+
+        localStorage.setItem(
+          "plotapna_current_user",
+          JSON.stringify(newUser)
+        );
+
+
+
+        console.log(
+          "NEW USER CREATED",
+          newUser
+        );
+
+
+
+        router.push("/dashboard");
+
         return;
+
+
       }
 
-      const existingUser = users.find(
-        (user: { email: string }) =>
-          user.email.toLowerCase() === email.toLowerCase()
-      );
 
-      if (existingUser) {
-        setError("An account with this email already exists.");
+
+
+      // =========================
+      // LOGIN
+      // =========================
+
+
+      if(
+        !normalizedEmail ||
+        !password
+      ){
+
+        setError(
+          "Please enter email and password."
+        );
+
+        setLoading(false);
+
         return;
+
       }
 
-      const newUser = {
-        id: Date.now().toString(),
-        name,
-        email,
-        mobile,
-        password,
-      };
+
+
+      const {data:user,error:loginError}=
+
+        await supabase
+        .from("users")
+        .select("*")
+        .eq("email",normalizedEmail)
+        .eq("password",password)
+        .maybeSingle();
+
+
+
+
+      if(loginError){
+
+        console.error(loginError);
+
+        setError(loginError.message);
+
+        setLoading(false);
+
+        return;
+
+      }
+
+
+
+
+      if(!user){
+
+        setError(
+          "Invalid email or password."
+        );
+
+        setLoading(false);
+
+        return;
+
+      }
+
+
+
 
       localStorage.setItem(
-        "plotapna_users",
-        JSON.stringify([...users, newUser])
+        "plotapna_current_user",
+        JSON.stringify(user)
       );
 
-      localStorage.setItem("plotapna_current_user", JSON.stringify(newUser));
+
+
+      console.log(
+        "LOGIN SUCCESS",
+        user
+      );
+
+
 
       router.push("/dashboard");
-      return;
+
+
+
+    } 
+    catch(err){
+
+      console.error(
+        "AUTH ERROR",
+        err
+      );
+
+      setError(
+        "Something went wrong. Please try again."
+      );
+
+    }
+    finally{
+
+      setLoading(false);
+
     }
 
-    const user = users.find(
-      (item: { email: string; password: string }) =>
-        item.email.toLowerCase() === email.toLowerCase() &&
-        item.password === password
-    );
-
-    if (!user) {
-      setError("Invalid email or password.");
-      return;
-    }
-
-    localStorage.setItem("plotapna_current_user", JSON.stringify(user));
-
-    router.push("/dashboard");
   }
 
+
+
+  function switchMode(){
+
+    setIsSignup(!isSignup);
+
+    setName("");
+    setEmail("");
+    setMobile("");
+    setPassword("");
+    setError("");
+
+  }
+
+
+
   return (
+
     <main className="min-h-screen bg-gray-50">
+
+
       <nav className="border-b bg-white">
+
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+
+
           <Link
             href="/"
             className="text-2xl font-bold text-blue-700"
@@ -82,122 +280,297 @@ export default function LoginPage() {
             PLOTAPNA
           </Link>
 
+
           <Link
             href="/"
-            className="text-sm font-medium text-gray-600 hover:text-blue-700"
+            className="text-sm text-gray-600"
           >
             Back to Home
           </Link>
+
+
         </div>
+
       </nav>
 
+
+
       <div className="flex min-h-[calc(100vh-73px)] items-center justify-center px-6 py-10">
+
+
         <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+
+
           <div className="text-center">
+
             <h1 className="text-3xl font-bold text-gray-900">
-              {isSignup ? "Create your account" : "Welcome back"}
+
+              {
+                isSignup
+                ? "Create your account"
+                : "Welcome back"
+              }
+
             </h1>
 
+
             <p className="mt-2 text-gray-500">
-              {isSignup
-                ? "Join PlotApna and list your property."
-                : "Login to manage your PlotApna properties."}
+
+              {
+                isSignup
+                ?
+                "Join PlotApna and list your property."
+                :
+                "Login to manage your PlotApna properties."
+              }
+
             </p>
+
+
           </div>
 
-          {error && (
-            <div className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            {isSignup && (
+
+
+          {
+            error && (
+
+              <div className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+
+                {error}
+
+              </div>
+
+            )
+          }
+
+
+
+
+
+
+          <form
+            onSubmit={handleSubmit}
+            className="mt-8 space-y-5"
+          >
+
+
+
+            {
+              isSignup && (
+
               <>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Full Name
-                  </label>
 
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
-                </div>
+              <div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Mobile Number
-                  </label>
+              <label className="mb-2 block text-sm font-medium">
 
-                  <input
-                    type="tel"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                    placeholder="Enter mobile number"
-                    className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
-                </div>
+              Full Name
+
+              </label>
+
+
+              <input
+
+              value={name}
+
+              onChange={
+                e=>setName(e.target.value)
+              }
+
+              className="w-full rounded-xl border px-4 py-3"
+
+              placeholder="Enter your name"
+
+              />
+
+
+              </div>
+
+
+
+              <div>
+
+              <label className="mb-2 block text-sm font-medium">
+
+              Mobile Number
+
+              </label>
+
+
+              <input
+
+              value={mobile}
+
+              onChange={
+                e=>setMobile(e.target.value)
+              }
+
+              className="w-full rounded-xl border px-4 py-3"
+
+              placeholder="Enter mobile number"
+
+              />
+
+              </div>
+
+
               </>
-            )}
+
+              )
+            }
+
+
+
+
+
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Email
-              </label>
 
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-              />
+            <label className="mb-2 block text-sm font-medium">
+
+            Email
+
+            </label>
+
+
+            <input
+
+            type="email"
+
+            value={email}
+
+            onChange={
+              e=>setEmail(e.target.value)
+            }
+
+            className="w-full rounded-xl border px-4 py-3"
+
+            placeholder="you@example.com"
+
+            required
+
+            />
+
+
             </div>
+
+
+
+
+
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Password
-              </label>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-              />
+            <label className="mb-2 block text-sm font-medium">
+
+            Password
+
+            </label>
+
+
+            <input
+
+            type="password"
+
+            value={password}
+
+            onChange={
+              e=>setPassword(e.target.value)
+            }
+
+            className="w-full rounded-xl border px-4 py-3"
+
+            placeholder="Enter password"
+
+            required
+
+            />
+
+
             </div>
+
+
+
+
+
 
             <button
-              type="submit"
-              className="w-full rounded-xl bg-blue-700 py-3.5 font-semibold text-white transition hover:bg-blue-800"
+
+            disabled={loading}
+
+            className="w-full rounded-xl bg-blue-700 py-3.5 font-semibold text-white"
+
             >
-              {isSignup ? "Create Account" : "Login"}
+
+            {
+              loading
+              ?
+              "Please wait..."
+              :
+              isSignup
+              ?
+              "Create Account"
+              :
+              "Login"
+            }
+
+
             </button>
+
+
+
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
-            {isSignup
-              ? "Already have an account?"
-              : "Don't have an account?"}
 
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignup(!isSignup);
-                setError("");
-              }}
-              className="ml-1 font-semibold text-blue-700 hover:text-blue-800"
-            >
-              {isSignup ? "Login" : "Sign up"}
-            </button>
+
+
+
+
+          <div className="mt-6 text-center text-sm">
+
+
+          {
+            isSignup
+            ?
+            "Already have an account?"
+            :
+            "Don't have an account?"
+          }
+
+
+
+          <button
+
+          onClick={switchMode}
+
+          className="ml-1 font-semibold text-blue-700"
+
+          >
+
+          {
+            isSignup
+            ?
+            "Login"
+            :
+            "Sign up"
+          }
+
+          </button>
+
+
           </div>
+
+
+
         </div>
+
+
       </div>
+
+
     </main>
+
   );
+
 }

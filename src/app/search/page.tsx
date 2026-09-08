@@ -1,562 +1,652 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { properties } from "@/lib/properties";
+import { supabase } from "@/lib/supabase";
 
-function formatPrice(price: number, purpose: string) {
-  if (purpose === "Rent") {
-    return "₹" + price.toLocaleString("en-IN") + "/month";
-  }
-
-  if (price >= 10000000) {
-    return "₹" + (price / 10000000).toFixed(2) + " Cr";
-  }
-
-  if (price >= 100000) {
-    return "₹" + (price / 100000).toFixed(0) + " Lakh";
-  }
-
-  return "₹" + price.toLocaleString("en-IN");
-}
-
-type UserProperty = {
+type Property = {
   id: string;
   title: string;
   city: string;
   location: string;
   type: string;
   purpose: string;
-  price: number;
-  bedrooms: number;
-  area: number;
-  image: string;
-  description?: string;
-  ownerId?: string;
-  ownerName?: string;
-  ownerEmail?: string;
-  ownerMobile?: string;
-  createdAt?: string;
+  price: number | string;
+  bedrooms: number | string;
+  area: number | string;
+  image?: string | null;
+  description?: string | null;
+  owner_email?: string | null;
+  owner_name?: string | null;
+  owner_mobile?: string | null;
+  created_at?: string;
 };
 
 export default function SearchPage() {
-  const [userProperties, setUserProperties] = useState<UserProperty[]>([]);
+  const [propertiesFromDatabase, setPropertiesFromDatabase] = useState<
+    Property[]
+  >([]);
 
-  const [purpose, setPurpose] = useState("Buy");
-  const [city, setCity] = useState("All Cities");
-  const [locality, setLocality] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [propertyType, setPropertyType] = useState("All Types");
-  const [budget, setBudget] = useState("Any Budget");
-  const [bedrooms, setBedrooms] = useState("Any");
-
-  const [appliedPurpose, setAppliedPurpose] = useState("Buy");
-  const [appliedCity, setAppliedCity] = useState("All Cities");
-  const [appliedLocality, setAppliedLocality] = useState("");
-  const [appliedPropertyType, setAppliedPropertyType] =
-    useState("All Types");
-  const [appliedBudget, setAppliedBudget] =
-    useState("Any Budget");
-  const [appliedBedrooms, setAppliedBedrooms] =
-    useState("Any");
+  const [purpose, setPurpose] = useState("All");
+  const [city, setCity] = useState("");
+  const [location, setLocation] = useState("");
+  const [type, setType] = useState("All");
+  const [budget, setBudget] = useState("");
+  const [bedrooms, setBedrooms] = useState("All");
 
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  // Load properties posted by users
+  /*
+   * LOAD ALL PROPERTIES
+   *
+   * IMPORTANT:
+   * There is deliberately NO owner_email filter here.
+   * Every property in the public properties table is loaded.
+   */
   useEffect(() => {
-    try {
-      const savedProperties = JSON.parse(
-        localStorage.getItem("plotapna_user_properties") || "[]"
-      );
+    let cancelled = false;
 
-      setUserProperties(savedProperties);
-    } catch {
-      setUserProperties([]);
+    async function loadProperties() {
+      try {
+        setLoading(true);
+        setErrorMessage("");
+
+        const { data, error } = await supabase
+          .from("properties")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        console.log("PLOTAPNA - ALL SUPABASE PROPERTIES:", data);
+        console.log("PLOTAPNA - SUPABASE ERROR:", error);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (error) {
+          console.error("Unable to load properties:", error);
+          setErrorMessage(error.message);
+          setPropertiesFromDatabase([]);
+          return;
+        }
+
+        setPropertiesFromDatabase((data || []) as Property[]);
+      } catch (error) {
+        console.error("Property loading error:", error);
+
+        if (!cancelled) {
+          setErrorMessage("Unable to load properties.");
+          setPropertiesFromDatabase([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
 
-    try {
-      const savedFavorites = JSON.parse(
-        localStorage.getItem("plotapna_favorites") || "[]"
-      );
+    loadProperties();
 
-      setFavorites(savedFavorites);
-    } catch {
-      setFavorites([]);
+    const savedFavorites = localStorage.getItem("plotapna_favorites");
+
+    if (savedFavorites) {
+      try {
+        setFavorites(JSON.parse(savedFavorites));
+      } catch {
+        setFavorites([]);
+      }
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  function handleSearch() {
-    setAppliedPurpose(purpose);
-    setAppliedCity(city);
-    setAppliedLocality(locality);
-    setAppliedPropertyType(propertyType);
-    setAppliedBudget(budget);
-    setAppliedBedrooms(bedrooms);
+  /*
+   * COMBINE DATABASE PROPERTIES + SAMPLE PROPERTIES
+   */
+  const allProperties = useMemo<Property[]>(() => {
+    const sampleProperties: Property[] = properties.map((property) => ({
+      id: String(property.id),
+      title: property.title,
+      city: property.city,
+      location: property.location,
+      type: property.type,
+      purpose: property.purpose,
+      price: property.price,
+      bedrooms: property.bedrooms,
+      area: property.area,
+      image: property.image,
+      description: undefined,
+      owner_email: null,
+      owner_name: null,
+      owner_mobile: null,
+    }));
 
-    console.log("Search:", {
-      purpose,
-      city,
-      locality,
-      propertyType,
-      budget,
-      bedrooms,
+    /*
+     * Database properties are placed first.
+     * Therefore newly posted properties appear first.
+     */
+    return [...propertiesFromDatabase, ...sampleProperties];
+  }, [propertiesFromDatabase]);
+
+  /*
+   * FILTER PROPERTIES
+   */
+  const filteredProperties = useMemo(() => {
+    return allProperties.filter((property) => {
+      const propertyPurpose = String(property.purpose || "")
+        .trim()
+        .toLowerCase();
+
+      const propertyCity = String(property.city || "")
+        .trim()
+        .toLowerCase();
+
+      const propertyLocation = String(property.location || "")
+        .trim()
+        .toLowerCase();
+
+      const propertyType = String(property.type || "")
+        .trim()
+        .toLowerCase();
+
+      const propertyPrice = Number(property.price) || 0;
+      const propertyBedrooms = Number(property.bedrooms) || 0;
+
+      /*
+       * PURPOSE
+       */
+      if (
+        purpose !== "All" &&
+        propertyPurpose !== purpose.trim().toLowerCase()
+      ) {
+        return false;
+      }
+
+      /*
+       * CITY
+       */
+      if (
+        city.trim() &&
+        !propertyCity.includes(city.trim().toLowerCase())
+      ) {
+        return false;
+      }
+
+      /*
+       * LOCALITY
+       */
+      if (
+        location.trim() &&
+        !propertyLocation.includes(location.trim().toLowerCase())
+      ) {
+        return false;
+      }
+
+      /*
+       * PROPERTY TYPE
+       */
+      if (
+        type !== "All" &&
+        propertyType !== type.trim().toLowerCase()
+      ) {
+        return false;
+      }
+
+      /*
+       * MAXIMUM BUDGET
+       */
+      if (budget.trim()) {
+        const maximumBudget = Number(budget);
+
+        if (
+          Number.isFinite(maximumBudget) &&
+          propertyPrice > maximumBudget
+        ) {
+          return false;
+        }
+      }
+
+      /*
+       * BEDROOMS
+       */
+      if (bedrooms !== "All") {
+        if (propertyBedrooms !== Number(bedrooms)) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }
+  }, [
+    allProperties,
+    purpose,
+    city,
+    location,
+    type,
+    budget,
+    bedrooms,
+  ]);
 
-  function handleReset() {
-    setPurpose("Buy");
-    setCity("All Cities");
-    setLocality("");
-
-    setPropertyType("All Types");
-    setBudget("Any Budget");
-    setBedrooms("Any");
-
-    setAppliedPurpose("Buy");
-    setAppliedCity("All Cities");
-    setAppliedLocality("");
-    setAppliedPropertyType("All Types");
-    setAppliedBudget("Any Budget");
-    setAppliedBedrooms("Any");
-  }
-
-  function toggleFavorite(id: string) {
+  /*
+   * FAVORITES
+   */
+  const toggleFavorite = (id: string) => {
     setFavorites((current) => {
-      const updatedFavorites = current.includes(id)
-        ? current.filter((favoriteId) => favoriteId !== id)
+      const updated = current.includes(id)
+        ? current.filter((item) => item !== id)
         : [...current, id];
 
       localStorage.setItem(
         "plotapna_favorites",
-        JSON.stringify(updatedFavorites)
+        JSON.stringify(updated)
       );
 
-      return updatedFavorites;
+      return updated;
     });
-  }
+  };
 
-  // Combine demo properties + properties posted by users
-  const allProperties: UserProperty[] = [...properties, ...userProperties];
-
-  const filteredProperties = allProperties.filter((property) => {
-    const matchesPurpose =
-      appliedPurpose === "All" ||
-      property.purpose === appliedPurpose;
-
-    const matchesCity =
-      appliedCity === "All Cities" ||
-      property.city === appliedCity;
-
-    const searchText = appliedLocality.toLowerCase().trim();
-
-    const matchesLocality =
-      searchText === "" ||
-      property.location.toLowerCase().includes(searchText) ||
-      property.title.toLowerCase().includes(searchText);
-
-    const matchesPropertyType =
-      appliedPropertyType === "All Types" ||
-      property.type === appliedPropertyType;
-
-    let matchesBudget = true;
-
-    if (appliedBudget === "Under ₹50 Lakh") {
-      matchesBudget = property.price < 5000000;
-    } else if (appliedBudget === "₹50 Lakh - ₹1 Cr") {
-      matchesBudget =
-        property.price >= 5000000 &&
-        property.price <= 10000000;
-    } else if (appliedBudget === "₹1 Cr - ₹2 Cr") {
-      matchesBudget =
-        property.price > 10000000 &&
-        property.price <= 20000000;
-    } else if (appliedBudget === "Above ₹2 Cr") {
-      matchesBudget = property.price > 20000000;
-    }
-
-    let matchesBedrooms = true;
-
-    if (appliedBedrooms === "1 BHK") {
-      matchesBedrooms = property.bedrooms === 1;
-    } else if (appliedBedrooms === "2 BHK") {
-      matchesBedrooms = property.bedrooms === 2;
-    } else if (appliedBedrooms === "3 BHK") {
-      matchesBedrooms = property.bedrooms === 3;
-    } else if (appliedBedrooms === "4+ BHK") {
-      matchesBedrooms = property.bedrooms >= 4;
-    }
-
-    return (
-      matchesPurpose &&
-      matchesCity &&
-      matchesLocality &&
-      matchesPropertyType &&
-      matchesBudget &&
-      matchesBedrooms
-    );
-  });
+  /*
+   * CLEAR FILTERS
+   */
+  const clearFilters = () => {
+    setPurpose("All");
+    setCity("");
+    setLocation("");
+    setType("All");
+    setBudget("");
+    setBedrooms("All");
+  };
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="border-b bg-white">
+      {/* NAVBAR */}
+      <header className="border-b bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link
             href="/"
-            className="text-2xl font-bold text-blue-700"
+            className="text-2xl font-bold text-blue-600"
           >
             PLOTAPNA
           </Link>
 
-          <div className="flex items-center gap-6 text-sm font-medium">
+          <nav className="flex items-center gap-5 text-sm font-medium">
             <Link
               href="/"
-              className="hover:text-blue-700"
+              className="text-gray-700 hover:text-blue-600"
             >
               Home
             </Link>
 
             <Link
               href="/search"
-              className="text-blue-700"
+              className="text-blue-600"
             >
               Properties
             </Link>
 
             <Link
               href="/dashboard"
-              className="hover:text-blue-700"
+              className="text-gray-700 hover:text-blue-600"
             >
               Dashboard
             </Link>
 
             <Link
               href="/post-property"
-              className="rounded-lg bg-blue-700 px-4 py-2 text-white hover:bg-blue-800"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               Post Property
             </Link>
-          </div>
+          </nav>
         </div>
-      </nav>
+      </header>
 
-      {/* Search Bar */}
-      <section className="border-b bg-white px-6 py-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-4 md:flex-row">
-            <select
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              className="rounded-lg border px-4 py-3"
-            >
-              <option>Buy</option>
-              <option>Rent</option>
-              <option>Commercial</option>
-              <option>All</option>
-            </select>
-
-            <select
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="rounded-lg border px-4 py-3"
-            >
-              <option>All Cities</option>
-              <option>Gurgaon</option>
-              <option>Delhi</option>
-              <option>Noida</option>
-              <option>Mumbai</option>
-              <option>Bangalore</option>
-            </select>
-
-            <input
-              type="text"
-              value={locality}
-              onChange={(e) => setLocality(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-              placeholder="Search locality, sector or project"
-              className="flex-1 rounded-lg border px-4 py-3 outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
-            />
-
-            <button
-              type="button"
-              onClick={handleSearch}
-              className="rounded-lg bg-blue-700 px-8 py-3 font-semibold text-white transition hover:bg-blue-800"
-            >
-              Search
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Results */}
+      {/* PAGE */}
       <section className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Properties for Sale & Rent
-            </h1>
+        {/* HEADER */}
+        <div className="mb-8">
+          <p className="text-sm font-medium text-blue-600">
+            PLOTAPNA PROPERTIES
+          </p>
 
-            <p className="mt-1 text-gray-500">
-              {filteredProperties.length}{" "}
-              {filteredProperties.length === 1
-                ? "property"
-                : "properties"}{" "}
-              available on PlotApna
-            </p>
+          <h1 className="mt-2 text-3xl font-bold text-gray-900">
+            Search Properties
+          </h1>
 
-            {userProperties.length > 0 && (
-              <p className="mt-1 text-sm font-medium text-green-600">
-                {userProperties.length} recently posted{" "}
-                {userProperties.length === 1
-                  ? "property"
-                  : "properties"}
-              </p>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={handleReset}
-            className="text-sm font-medium text-blue-700 hover:underline"
-          >
-            Reset Search
-          </button>
+          <p className="mt-2 text-gray-600">
+            Discover properties listed by owners on PlotApna.
+          </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-          {/* Filters */}
-          <aside className="h-fit rounded-xl border bg-white p-5">
-            <h2 className="text-lg font-bold text-gray-900">
-              Filters
-            </h2>
+        {/* FILTERS */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+            {/* PURPOSE */}
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-gray-600">
+                Purpose
+              </label>
 
-            <div className="mt-6">
-              <label className="text-sm font-medium text-gray-700">
+              <select
+                value={purpose}
+                onChange={(event) =>
+                  setPurpose(event.target.value)
+                }
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
+              >
+                <option value="All">All</option>
+                <option value="Buy">Buy</option>
+                <option value="Rent">Rent</option>
+              </select>
+            </div>
+
+            {/* CITY */}
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-gray-600">
+                City
+              </label>
+
+              <input
+                type="text"
+                value={city}
+                onChange={(event) =>
+                  setCity(event.target.value)
+                }
+                placeholder="Gurgaon"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
+              />
+            </div>
+
+            {/* LOCALITY */}
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-gray-600">
+                Locality
+              </label>
+
+              <input
+                type="text"
+                value={location}
+                onChange={(event) =>
+                  setLocation(event.target.value)
+                }
+                placeholder="Sector 65"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
+              />
+            </div>
+
+            {/* TYPE */}
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-gray-600">
                 Property Type
               </label>
 
               <select
-                value={propertyType}
-                onChange={(e) =>
-                  setPropertyType(e.target.value)
+                value={type}
+                onChange={(event) =>
+                  setType(event.target.value)
                 }
-                className="mt-2 w-full rounded-lg border px-3 py-2 outline-none focus:border-blue-700"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
               >
-                <option>All Types</option>
-                <option>Apartment</option>
-                <option>Independent House</option>
-                <option>Plot</option>
-                <option>Villa</option>
-                <option>Land</option>
-                <option>Commercial</option>
+                <option value="All">All</option>
+                <option value="Apartment">Apartment</option>
+                <option value="Independent House">
+                  Independent House
+                </option>
+                <option value="Villa">Villa</option>
+                <option value="Plot">Plot</option>
+                <option value="Land">Land</option>
+                <option value="Commercial">Commercial</option>
               </select>
             </div>
 
-            <div className="mt-5">
-              <label className="text-sm font-medium text-gray-700">
-                Budget
+            {/* BUDGET */}
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-gray-600">
+                Max Budget (₹)
               </label>
 
-              <select
+              <input
+                type="number"
                 value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                className="mt-2 w-full rounded-lg border px-3 py-2 outline-none focus:border-blue-700"
-              >
-                <option>Any Budget</option>
-                <option>Under ₹50 Lakh</option>
-                <option>₹50 Lakh - ₹1 Cr</option>
-                <option>₹1 Cr - ₹2 Cr</option>
-                <option>Above ₹2 Cr</option>
-              </select>
+                onChange={(event) =>
+                  setBudget(event.target.value)
+                }
+                placeholder="5000000"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
+              />
             </div>
 
-            <div className="mt-5">
-              <label className="text-sm font-medium text-gray-700">
+            {/* BEDROOMS */}
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-gray-600">
                 Bedrooms
               </label>
 
               <select
                 value={bedrooms}
-                onChange={(e) => setBedrooms(e.target.value)}
-                className="mt-2 w-full rounded-lg border px-3 py-2 outline-none focus:border-blue-700"
+                onChange={(event) =>
+                  setBedrooms(event.target.value)
+                }
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
               >
-                <option>Any</option>
-                <option>1 BHK</option>
-                <option>2 BHK</option>
-                <option>3 BHK</option>
-                <option>4+ BHK</option>
+                <option value="All">All</option>
+                <option value="1">1 BHK</option>
+                <option value="2">2 BHK</option>
+                <option value="3">3 BHK</option>
+                <option value="4">4 BHK</option>
+                <option value="5">5 BHK</option>
               </select>
             </div>
+          </div>
 
-            <button
-              type="button"
-              onClick={handleSearch}
-              className="mt-6 w-full rounded-lg bg-blue-700 py-3 font-semibold text-white transition hover:bg-blue-800"
-            >
-              Apply Filters
-            </button>
+          <button
+            onClick={clearFilters}
+            className="mt-4 text-sm font-medium text-blue-600 hover:underline"
+          >
+            Clear Filters
+          </button>
+        </div>
 
-            <button
-              type="button"
-              onClick={handleReset}
-              className="mt-3 w-full rounded-lg border border-gray-300 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
-            >
-              Reset Filters
-            </button>
-          </aside>
+        {/* RESULTS HEADER */}
+        <div className="mt-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              {filteredProperties.length} Properties Found
+            </h2>
 
-          {/* Property List */}
-          <div className="space-y-5">
-            {filteredProperties.length > 0 ? (
-              filteredProperties.map((property) => (
-                <article
-                  key={property.id}
-                  className="overflow-hidden rounded-xl border bg-white shadow-sm transition hover:shadow-md"
-                >
-                  <div className="flex flex-col md:flex-row">
-                    {/* Property Image */}
-                    <div className="h-56 bg-gray-100 md:w-64">
-                      {property.image ? (
-                        <img
-                          src={property.image}
-                          alt={property.title}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center">
-                          <div className="text-center">
-                            <div className="text-5xl">
-                              🏡
-                            </div>
-
-                            <p className="mt-2 text-xs text-gray-500">
-                              Photo coming soon
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Property Details */}
-                    <div className="flex-1 p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                            {property.purpose}
-                          </span>
-
-                          <h2 className="mt-3 text-xl font-bold text-gray-900">
-                            {property.title}
-                          </h2>
-
-                          <p className="mt-1 text-gray-500">
-                            {property.location},{" "}
-                            {property.city}
-                          </p>
-                        </div>
-
-                        {/* Favorite */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            toggleFavorite(
-                              String(property.id)
-                            )
-                          }
-                          aria-label="Add property to favorites"
-                          className={
-                            favorites.includes(
-                              String(property.id)
-                            )
-                              ? "text-2xl text-red-500"
-                              : "text-2xl text-gray-400 hover:text-red-500"
-                          }
-                        >
-                          {favorites.includes(
-                            String(property.id)
-                          )
-                            ? "♥"
-                            : "♡"}
-                        </button>
-                      </div>
-
-                      {/* Property Info */}
-                      <div className="mt-5 flex flex-wrap gap-6 text-sm text-gray-600">
-                        <span>
-                          <strong className="text-gray-900">
-                            {property.area}
-                          </strong>{" "}
-                          sq.ft
-                        </span>
-
-                        {property.bedrooms > 0 && (
-                          <span>
-                            <strong className="text-gray-900">
-                              {property.bedrooms}
-                            </strong>{" "}
-                            BHK
-                          </span>
-                        )}
-
-                        <span>{property.type}</span>
-                      </div>
-
-                      {/* Price + Details */}
-                      <div className="mt-5 flex items-center justify-between gap-4">
-                        <div>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {formatPrice(
-                              property.price,
-                              property.purpose
-                            )}
-                          </p>
-
-                          {property.ownerName && (
-                            <p className="mt-1 text-xs text-gray-500">
-                              Listed by {property.ownerName}
-                            </p>
-                          )}
-                        </div>
-
-                        <Link
-                          href={`/property/${property.id}`}
-                          className="rounded-lg border border-blue-700 px-5 py-2 font-semibold text-blue-700 transition hover:bg-blue-50"
-                        >
-                          View Details
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="rounded-xl border bg-white p-10 text-center shadow-sm">
-                <div className="text-5xl">🏠</div>
-
-                <h2 className="mt-4 text-xl font-bold text-gray-900">
-                  No properties found
-                </h2>
-
-                <p className="mt-2 text-gray-500">
-                  Try changing your city, locality, budget,
-                  property type, or bedroom preference.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="mt-5 rounded-lg bg-blue-700 px-6 py-3 font-semibold text-white transition hover:bg-blue-800"
-                >
-                  Reset Search
-                </button>
-              </div>
-            )}
+            <p className="mt-1 text-sm text-gray-500">
+              {propertiesFromDatabase.length} owner-listed properties
+            </p>
           </div>
         </div>
+
+        {/* ERROR */}
+        {errorMessage && (
+          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            Unable to load owner properties: {errorMessage}
+          </div>
+        )}
+
+        {/* LOADING */}
+        {loading ? (
+          <div className="mt-6 rounded-2xl bg-white p-12 text-center shadow-sm">
+            <div className="text-4xl">🏠</div>
+
+            <p className="mt-4 text-gray-500">
+              Loading properties...
+            </p>
+          </div>
+        ) : filteredProperties.length === 0 ? (
+          /* NO RESULTS */
+          <div className="mt-6 rounded-2xl bg-white p-12 text-center shadow-sm">
+            <div className="text-5xl">🏠</div>
+
+            <h3 className="mt-4 text-xl font-bold text-gray-900">
+              No properties found
+            </h3>
+
+            <p className="mt-2 text-gray-500">
+              Try changing your search filters.
+            </p>
+
+            <button
+              onClick={clearFilters}
+              className="mt-5 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : (
+          /* PROPERTY GRID */
+          <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredProperties.map((property) => {
+              const propertyId = String(property.id);
+
+              const isFavorite =
+                favorites.includes(propertyId);
+
+              const image =
+                typeof property.image === "string"
+                  ? property.image.trim()
+                  : "";
+
+              const ownerListed =
+                Boolean(property.owner_email);
+
+              return (
+                <div
+                  key={propertyId}
+                  className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-1 hover:shadow-md"
+                >
+                  {/* IMAGE */}
+                  <div className="relative">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={property.title}
+                        className="h-56 w-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-56 items-center justify-center bg-gray-200">
+                        <div className="text-center text-gray-500">
+                          <div className="text-4xl">🏠</div>
+
+                          <p className="mt-2 text-sm font-medium">
+                            Photo coming soon
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* FAVORITE */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleFavorite(propertyId)
+                      }
+                      className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl shadow hover:bg-white"
+                      aria-label={
+                        isFavorite
+                          ? "Remove from favorites"
+                          : "Add to favorites"
+                      }
+                    >
+                      {isFavorite ? "❤️" : "♡"}
+                    </button>
+
+                    {/* PURPOSE */}
+                    <span className="absolute bottom-3 left-3 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+                      {property.purpose}
+                    </span>
+
+                    {/* OWNER LISTED */}
+                    {ownerListed && (
+                      <span className="absolute right-3 bottom-3 rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">
+                        Owner Listed
+                      </span>
+                    )}
+                  </div>
+
+                  {/* DETAILS */}
+                  <div className="p-5">
+                    <h3 className="line-clamp-2 font-bold text-gray-900">
+                      {property.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm text-gray-500">
+                      📍 {property.location},{" "}
+                      {property.city}
+                    </p>
+
+                    {/* PRICE */}
+                    <p className="mt-4 text-xl font-bold text-gray-900">
+                      ₹
+                      {Number(property.price).toLocaleString(
+                        "en-IN"
+                      )}
+
+                      {property.purpose === "Rent" && (
+                        <span className="text-sm font-normal text-gray-500">
+                          {" "}
+                          / month
+                        </span>
+                      )}
+                    </p>
+
+                    {/* PROPERTY INFO */}
+                    <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-600">
+                      <span>
+                        {Number(property.area).toLocaleString(
+                          "en-IN"
+                        )}{" "}
+                        sq ft
+                      </span>
+
+                      {Number(property.bedrooms) > 0 && (
+                        <span>
+                          {Number(property.bedrooms)} BHK
+                        </span>
+                      )}
+
+                      <span>{property.type}</span>
+                    </div>
+
+                    {/* OWNER */}
+                    {ownerListed && (
+                      <div className="mt-4 rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">
+                          Listed by
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-gray-800">
+                          {property.owner_name ||
+                            "Property Owner"}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* DETAILS BUTTON */}
+                    <Link
+                      href={`/property/${property.id}`}
+                      className="mt-5 block rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700"
+                    >
+                      View Details →
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </main>
   );
