@@ -1,262 +1,518 @@
 import Link from "next/link";
 
+
 export const metadata = {
-  title: "Properties for Sale in Gurgaon | Buy Property in Gurgaon | PlotApna",
-  description:
-    "Find properties for sale in Gurgaon including plots, flats, houses and commercial properties. Explore property listings, prices, locations and details on PlotApna.",
-  alternates: {
-    canonical: "https://plotapna.com/properties/gurgaon",
-  },
-  openGraph: {
-    title: "Properties for Sale in Gurgaon | PlotApna",
-    description:
-      "Explore plots, houses, flats and other properties for sale in Gurgaon on PlotApna.",
-    url: "https://plotapna.com/properties/gurgaon",
-    siteName: "PlotApna",
-    type: "website",
-  },
+
+title:
+"Property in Gurgaon | Buy Flats, Houses & Plots in Gurgaon | PlotApna",
+
+description:
+"Find the best properties in Gurgaon including flats, apartments, villas, independent houses and residential plots. Explore Gurgaon real estate listings and investment opportunities on PlotApna.",
+
+
+keywords:[
+"property in Gurgaon",
+"flats for sale in Gurgaon",
+"houses for sale in Gurgaon",
+"plots for sale in Gurgaon",
+"Gurgaon real estate",
+"buy property in Gurgaon",
+"Gurgaon property market",
+"residential property Gurgaon"
+],
+
+alternates:{
+canonical:
+"https://plotapna.com/properties/gurgaon"
+}
+
 };
 
-export default function GurgaonPropertiesPage() {
-  return (
-    <main className="min-h-screen bg-white">
-      {/* Hero */}
-      <section className="bg-gray-50 px-6 py-16">
-        <div className="mx-auto max-w-6xl">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-blue-600">
-            PlotApna Real Estate
-          </p>
 
-          <h1 className="max-w-4xl text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
-            Properties for Sale in Gurgaon
-          </h1>
 
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-gray-600">
-            Explore plots, houses, flats, apartments and commercial
-            properties for sale in Gurgaon. Find property listings by
-            location, price and property type on PlotApna.
-          </p>
+export default function GurgaonPage(){
 
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Link
-              href="/search"
-              className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
-            >
-              Search Properties
-            </Link>
 
-            <Link
-              href="/post-property"
-              className="rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-800 hover:bg-gray-100"
-            >
-              List Your Property
-            </Link>
-          </div>
-        </div>
-      </section>
+return (
 
-      {/* Property Types */}
-      <section className="px-6 py-14">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Find Property in Gurgaon
-          </h2>
+<main className="min-h-screen bg-white">
 
-          <p className="mt-3 max-w-3xl text-gray-600">
-            Whether you are looking to buy a home, invest in land or find a
-            commercial property, explore different property options available
-            in Gurgaon.
-          </p>
 
-          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            <Link
-              href="/search?type=Plot"
-              className="rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md"
-            >
-              <h3 className="text-xl font-semibold text-gray-900">
-                Plots for Sale
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Find residential and investment plots in Gurgaon.
-              </p>
-            </Link>
+{/* HERO */}
 
-            <Link
-              href="/search?type=House"
-              className="rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md"
-            >
-              <h3 className="text-xl font-semibold text-gray-900">
-                Houses for Sale
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Explore houses and independent homes in Gurgaon.
-              </p>
-            </Link>
+<section className="bg-blue-50 px-6 py-20">
 
-            <Link
-              href="/search?type=Flat"
-              className="rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md"
-            >
-              <h3 className="text-xl font-semibold text-gray-900">
-                Flats for Sale
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Browse flats and apartments available in Gurgaon.
-              </p>
-            </Link>
 
-            <Link
-              href="/search?type=Commercial"
-              className="rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md"
-            >
-              <h3 className="text-xl font-semibold text-gray-900">
-                Commercial Property
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Discover commercial property and investment opportunities.
-              </p>
-            </Link>
-          </div>
-        </div>
-      </section>
+<div className="mx-auto max-w-6xl">
 
-      {/* Locations */}
-      <section className="bg-gray-50 px-6 py-14">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Popular Areas in Gurgaon
-          </h2>
 
-          <p className="mt-3 max-w-3xl text-gray-600">
-            Explore property opportunities across some of the major residential
-            and commercial areas of Gurgaon.
-          </p>
+<h1 className="text-4xl font-bold text-gray-900 md:text-6xl">
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              "Golf Course Road",
-              "Golf Course Extension Road",
-              "Sohna Road",
-              "Dwarka Expressway",
-              "New Gurgaon",
-              "Sector 57",
-              "Sector 67",
-              "Sector 82",
-            ].map((location) => (
-              <div
-                key={location}
-                className="rounded-lg border border-gray-200 bg-white p-4 font-medium text-gray-800"
-              >
-                Property in {location}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+Property in Gurgaon
 
-      {/* Why PlotApna */}
-      <section className="px-6 py-14">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Why Search Property on PlotApna?
-          </h2>
+<br/>
 
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">
-                Browse Property Listings
-              </h3>
-              <p className="mt-2 text-gray-600">
-                Explore available properties and compare listings based on
-                location, price and property type.
-              </p>
-            </div>
+Buy Flats, Houses & Residential Plots
 
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">
-                Buy Directly
-              </h3>
-              <p className="mt-2 text-gray-600">
-                Connect with property owners and sellers through individual
-                property listings.
-              </p>
-            </div>
+</h1>
 
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">
-                List Your Property
-              </h3>
-              <p className="mt-2 text-gray-600">
-                Property owners can list plots, houses, flats and other
-                properties on PlotApna.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* SEO Content */}
-      <section className="bg-gray-50 px-6 py-14">
-        <div className="mx-auto max-w-4xl">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Buy Property in Gurgaon
-          </h2>
+<p className="mt-6 max-w-3xl text-lg leading-8 text-gray-600">
 
-          <div className="mt-5 space-y-4 leading-7 text-gray-600">
-            <p>
-              Gurgaon, also known as Gurugram, is one of the major real estate
-              markets in the Delhi NCR region. The city offers a wide range of
-              residential and commercial property options, including
-              apartments, independent houses, plots and commercial spaces.
-            </p>
+Looking for property in Gurgaon?
+Explore apartments, luxury villas, independent houses,
+commercial spaces and residential plots available for
+sale in Gurgaon. PlotApna helps buyers discover the
+right property based on location, budget and requirements.
 
-            <p>
-              Buyers looking for property in Gurgaon can explore different
-              locations depending on their budget, preferred property type and
-              investment objectives. Areas around major roads and business
-              districts continue to attract residential and commercial
-              development.
-            </p>
+</p>
 
-            <p>
-              PlotApna provides a platform where property owners can list their
-              properties and buyers can discover available listings online.
-              Browse property listings, review available information and
-              contact sellers directly through the platform.
-            </p>
-          </div>
-        </div>
-      </section>
 
-      {/* CTA */}
-      <section className="px-6 py-16">
-        <div className="mx-auto max-w-4xl rounded-2xl bg-gray-900 px-8 py-12 text-center text-white">
-          <h2 className="text-3xl font-bold">
-            Looking to Buy or Sell Property in Gurgaon?
-          </h2>
 
-          <p className="mx-auto mt-4 max-w-2xl text-gray-300">
-            Explore property listings on PlotApna or list your property and
-            reach potential buyers.
-          </p>
+<div className="mt-8 flex gap-4">
 
-          <div className="mt-7 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/search"
-              className="rounded-lg bg-white px-6 py-3 font-semibold text-gray-900 hover:bg-gray-100"
-            >
-              Browse Properties
-            </Link>
 
-            <Link
-              href="/post-property"
-              className="rounded-lg border border-gray-600 px-6 py-3 font-semibold text-white hover:bg-gray-800"
-            >
-              Post Property
-            </Link>
-          </div>
-        </div>
-      </section>
-    </main>
-  );
+<Link
+href="/search?city=Gurgaon"
+className="rounded-xl bg-blue-700 px-7 py-3 text-white"
+>
+
+Search Gurgaon Properties
+
+</Link>
+
+
+
+<Link
+href="/post-property"
+className="rounded-xl border px-7 py-3"
+>
+
+List Your Property
+
+</Link>
+
+
+</div>
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+{/* INTRO */}
+
+<section className="mx-auto max-w-6xl px-6 py-16">
+
+
+<h2 className="text-3xl font-bold">
+
+Explore Gurgaon Real Estate Market
+
+</h2>
+
+
+<p className="mt-5 leading-8 text-gray-600">
+
+
+Gurgaon, also known as Gurugram, is one of India's
+fastest-growing real estate destinations. With
+world-class infrastructure, corporate offices,
+excellent connectivity and premium residential
+developments, Gurgaon has become a preferred choice
+for home buyers and property investors.
+
+
+</p>
+
+
+<p className="mt-5 leading-8 text-gray-600">
+
+
+From affordable apartments to luxury homes,
+commercial properties and investment plots, Gurgaon
+offers multiple opportunities for buyers looking to
+purchase property in Delhi NCR.
+
+
+</p>
+
+
+</section>
+
+
+
+
+
+
+
+{/* PROPERTY TYPES */}
+
+
+<section className="bg-gray-50 px-6 py-16">
+
+
+<div className="mx-auto max-w-6xl">
+
+
+<h2 className="text-3xl font-bold">
+
+Types of Properties Available in Gurgaon
+
+</h2>
+
+
+
+<div className="mt-8 grid gap-5 md:grid-cols-3">
+
+
+<div className="rounded-xl border bg-white p-6">
+
+<h3 className="font-bold text-xl">
+Flats & Apartments
+</h3>
+
+<p className="mt-3 text-gray-600">
+
+Find 1 BHK, 2 BHK, 3 BHK and luxury apartments
+in Gurgaon residential societies.
+
+</p>
+
+</div>
+
+
+
+<div className="rounded-xl border bg-white p-6">
+
+<h3 className="font-bold text-xl">
+Independent Houses
+</h3>
+
+<p className="mt-3 text-gray-600">
+
+Explore villas and independent houses suitable
+for families looking for premium living.
+
+</p>
+
+</div>
+
+
+
+<div className="rounded-xl border bg-white p-6">
+
+<h3 className="font-bold text-xl">
+Residential Plots
+</h3>
+
+<p className="mt-3 text-gray-600">
+
+Discover residential plots in Gurgaon for
+construction and long-term investment.
+
+</p>
+
+</div>
+
+
+
+</div>
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+
+{/* LOCATIONS */}
+
+
+<section className="mx-auto max-w-6xl px-6 py-16">
+
+
+<h2 className="text-3xl font-bold">
+
+Popular Locations to Buy Property in Gurgaon
+
+</h2>
+
+
+
+<div className="mt-8 grid gap-5 md:grid-cols-3">
+
+
+<div className="rounded-xl border p-6">
+
+<h3 className="font-bold">
+Golf Course Road
+</h3>
+
+<p className="mt-2 text-gray-600">
+
+Premium apartments, luxury residences and
+high-end investment opportunities.
+
+</p>
+
+</div>
+
+
+
+
+<div className="rounded-xl border p-6">
+
+<h3 className="font-bold">
+Dwarka Expressway
+</h3>
+
+<p className="mt-2 text-gray-600">
+
+One of the fastest-growing areas with
+new residential projects.
+
+</p>
+
+</div>
+
+
+
+
+<div className="rounded-xl border p-6">
+
+<h3 className="font-bold">
+Sohna Road
+</h3>
+
+<p className="mt-2 text-gray-600">
+
+Popular location for residential apartments
+and affordable housing.
+
+</p>
+
+</div>
+
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+
+{/* INVESTMENT */}
+
+
+<section className="bg-blue-50 px-6 py-16">
+
+
+<div className="mx-auto max-w-6xl">
+
+
+<h2 className="text-3xl font-bold">
+
+Why Invest in Gurgaon Property?
+
+</h2>
+
+
+
+<ul className="mt-6 space-y-4 text-gray-700">
+
+
+<li>
+✓ Major corporate hub with global companies
+</li>
+
+
+<li>
+✓ Excellent connectivity with Delhi and NCR regions
+</li>
+
+
+<li>
+✓ Growing demand for residential and commercial spaces
+</li>
+
+
+<li>
+✓ Strong rental and investment potential
+</li>
+
+
+<li>
+✓ Modern infrastructure and lifestyle facilities
+</li>
+
+
+</ul>
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+
+
+{/* FAQ */}
+
+
+<section className="mx-auto max-w-6xl px-6 py-16">
+
+
+<h2 className="text-3xl font-bold">
+
+Frequently Asked Questions About Gurgaon Property
+
+</h2>
+
+
+
+
+<div className="mt-8 space-y-8">
+
+
+<div>
+
+<h3 className="font-bold text-lg">
+
+Which are the best areas to buy property in Gurgaon?
+
+</h3>
+
+<p className="mt-2 text-gray-600">
+
+Golf Course Road, Dwarka Expressway, Sohna Road,
+Sector 65, Sector 57 and New Gurgaon are popular
+areas for property buyers.
+
+</p>
+
+</div>
+
+
+
+
+<div>
+
+<h3 className="font-bold text-lg">
+
+Is Gurgaon a good place for property investment?
+
+</h3>
+
+<p className="mt-2 text-gray-600">
+
+Yes, Gurgaon has strong infrastructure,
+employment opportunities and increasing demand,
+making it one of India's important real estate markets.
+
+</p>
+
+</div>
+
+
+
+
+<div>
+
+<h3 className="font-bold text-lg">
+
+How can I buy property in Gurgaon through PlotApna?
+
+</h3>
+
+<p className="mt-2 text-gray-600">
+
+Search available listings, compare properties
+and connect with property owners through PlotApna.
+
+</p>
+
+</div>
+
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+
+{/* CTA */}
+
+
+<section className="bg-blue-700 px-6 py-16 text-white">
+
+
+<div className="mx-auto max-w-5xl text-center">
+
+
+<h2 className="text-3xl font-bold">
+
+Find Your Dream Property in Gurgaon
+
+</h2>
+
+
+<p className="mt-4">
+
+Explore Gurgaon homes, apartments, plots and
+commercial properties on PlotApna.
+
+</p>
+
+
+
+<Link
+
+href="/search?city=Gurgaon"
+
+className="mt-8 inline-block rounded-xl bg-white px-8 py-3 text-blue-700"
+
+>
+
+Explore Properties
+
+</Link>
+
+
+</div>
+
+
+</section>
+
+
+</main>
+
+);
+
 }
