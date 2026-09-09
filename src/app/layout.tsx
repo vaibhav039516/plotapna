@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 
 
   description:
-    "PlotApna is India's property search platform to buy, sell and rent residential plots, houses, flats and commercial properties. Search properties and list your property for free.",
+    "PlotApna is India's property marketplace to buy, sell and rent residential plots, houses, flats, apartments and commercial properties. Search verified properties and list your property online.",
 
 
   keywords: [
@@ -36,10 +37,14 @@ export const metadata: Metadata = {
     "plots for sale",
     "houses for sale",
     "flats for sale",
+    "apartments for sale",
+    "commercial property",
     "real estate India",
     "property listing website",
     "Gurgaon property",
     "Delhi NCR property",
+    "Mumbai property",
+    "Noida property",
   ],
 
 
@@ -53,27 +58,40 @@ export const metadata: Metadata = {
   creator: "PlotApna",
 
 
+  publisher: "PlotApna",
+
+
   metadataBase: new URL(
     "https://plotapna.com"
   ),
 
 
+  alternates: {
+    canonical: "https://plotapna.com",
+  },
+
+
   openGraph: {
 
     title:
-      "PlotApna - Find Your Perfect Property",
+      "PlotApna - India's Property Marketplace",
+
 
     description:
-      "Buy, sell and rent properties across India. Discover plots, houses, apartments and commercial properties on PlotApna.",
+      "Discover plots, houses, apartments and commercial properties across India. Buy, sell and rent properties easily with PlotApna.",
+
 
     url:
       "https://plotapna.com",
 
+
     siteName:
       "PlotApna",
 
+
     locale:
       "en_IN",
+
 
     type:
       "website",
@@ -81,18 +99,22 @@ export const metadata: Metadata = {
   },
 
 
+
   twitter: {
 
     card:
       "summary_large_image",
 
+
     title:
-      "PlotApna - India's Property Marketplace",
+      "PlotApna - Buy & Sell Properties Online",
+
 
     description:
-      "Search properties, buy plots, sell houses and list properties easily with PlotApna.",
+      "Search properties, buy plots, sell houses and rent properties across India with PlotApna.",
 
   },
+
 
 
   robots: {
@@ -100,16 +122,31 @@ export const metadata: Metadata = {
     index:
       true,
 
+
     follow:
       true,
+
 
     googleBot: {
 
       index:
         true,
 
+
       follow:
         true,
+
+
+      "max-image-preview":
+        "large",
+
+
+      "max-snippet":
+        -1,
+
+
+      "max-video-preview":
+        -1,
 
     },
 
@@ -127,21 +164,40 @@ export default function RootLayout({
 }>) {
 
 
-  return (
+return (
 
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+<html
+lang="en"
+className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+>
 
-      <body className="min-h-full flex flex-col">
 
-        {children}
+<body className="min-h-full flex flex-col">
 
-      </body>
 
-    </html>
+{children}
 
-  );
+
+
+{/* Ahrefs Web Analytics */}
+
+<Script
+
+src="https://analytics.ahrefs.com/analytics.js"
+
+data-key="7AZ1W4jsNH48JIDswJWbzA"
+
+strategy="afterInteractive"
+
+/>
+
+
+
+</body>
+
+
+</html>
+
+);
 
 }
