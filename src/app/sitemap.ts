@@ -132,6 +132,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.95,
     },
 
+    {
+  url: `${baseUrl}/properties/gurgaon`,
+  lastModified: new Date(),
+  changeFrequency: "weekly",
+  priority: 0.9,
+},
+
+{
+  url: `${baseUrl}/properties/noida`,
+  lastModified: new Date(),
+  changeFrequency: "weekly",
+  priority: 0.9,
+},
+
+{
+  url: `${baseUrl}/properties/delhi`,
+  lastModified: new Date(),
+  changeFrequency: "weekly",
+  priority: 0.9,
+},
+
+{
+  url: `${baseUrl}/properties/mumbai`,
+  lastModified: new Date(),
+  changeFrequency: "weekly",
+  priority: 0.9,
+},
 
     // Dynamic property pages
 
@@ -141,3 +168,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
 }
+
